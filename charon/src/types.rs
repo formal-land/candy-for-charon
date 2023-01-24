@@ -134,6 +134,7 @@ where
     R: Clone + std::cmp::Eq,
 {
    boxedtype : Box<Ty<R>>,
+   refkind : RefKind,
 } 
 
 

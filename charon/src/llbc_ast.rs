@@ -39,8 +39,9 @@ pub struct Call {
 
 /// A raw statement: a statement without meta data.
 #[derive(Debug, Clone, EnumIsA, EnumToGetters, EnumAsGetters, Serialize)]
-pub enum RawStatement {
-    Assign(Place, Rvalue),
+pub enum RawStatement<R> where
+R: Clone + std::cmp::Eq, {
+    Assign(Place, Rvalue<R>),
     FakeRead(Place),
     SetDiscriminant(Place, VariantId::Id),
     Drop(Place),
@@ -67,21 +68,23 @@ pub enum RawStatement {
     /// For instance, `(s0; s1); s2` is forbidden and should be rewritten
     /// to the semantically equivalent statement `s0; (s1; s2)`
     /// To ensure that, use [crate::llbc_ast_utils::new_sequence] to build sequences.
-    Sequence(Box<Statement>, Box<Statement>),
-    Switch(Switch),
-    Loop(Box<Statement>),
+    Sequence(Box<Statement<R>>, Box<Statement<R>>),
+    Switch(Switch<R>),
+    Loop(Box<Statement<R>>),
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct Statement {
+pub struct Statement<R> where
+  R: Clone + std::cmp::Eq,
+{
     pub meta: Meta,
-    pub content: RawStatement,
+    pub content: RawStatement<R>,
 }
 
 #[derive(Debug, Clone, EnumIsA, EnumToGetters, EnumAsGetters, VariantName, VariantIndexArity)]
-pub enum Switch {
+pub enum Switch<R> {
     /// Gives the `if` block and the `else` block
-    If(Operand, Box<Statement>, Box<Statement>),
+    If(Operand, Box<Statement<R>>, Box<Statement<R>>),
     /// Gives the integer type, a map linking values to switch branches, and the
     /// otherwise block. Note that matches over enumerations are performed by
     /// switching over the discriminant, which is an integer.
@@ -99,21 +102,21 @@ pub enum Switch {
     SwitchInt(
         Operand,
         IntegerTy,
-        Vec<(Vec<ScalarValue>, Statement)>,
-        Box<Statement>,
+        Vec<(Vec<ScalarValue>, Statement<R>)>,
+        Box<Statement<R>>,
     ),
     /// A match over an ADT.
     ///
     /// The match statement is introduced in [crate::remove_read_discriminant]
     /// (whenever we find a discriminant read, we merge it with the subsequent
     /// switch into a match)
-    Match(Place, Vec<(Vec<VariantId::Id>, Statement)>, Box<Statement>),
+    Match(Place, Vec<(Vec<VariantId::Id>, Statement<R>)>, Box<Statement<R>>),
 }
 
-pub type ExprBody = GExprBody<Statement>;
+pub type ExprBody<R> = GExprBody<Statement<R>>;
 
-pub type FunDecl = GFunDecl<Statement>;
-pub type FunDecls = FunDeclId::Vector<FunDecl>;
+pub type FunDecl<R> = GFunDecl<Statement<R>>;
+pub type FunDecls<R> = FunDeclId::Vector<FunDecl<R>>;
 
-pub type GlobalDecl = GGlobalDecl<Statement>;
-pub type GlobalDecls = GlobalDeclId::Vector<GlobalDecl>;
+pub type GlobalDecl<R> = GGlobalDecl<Statement<R>>;
+pub type GlobalDecls<R> = GlobalDeclId::Vector<GlobalDecl<R>>;

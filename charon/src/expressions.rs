@@ -183,7 +183,7 @@ pub enum OperandConstantValue {
 /// TODO: we could factor out [Rvalue] and function calls (for LLBC, not ULLBC).
 /// We can also factor out the UnOp<R>s, binops with the function calls.
 #[derive(Debug, Clone, Serialize, EnumToGetters, EnumIsA)]
-pub enum Rvalue {
+pub enum Rvalue<R> {
     Use(Operand),
     Ref(Place, BorrowKind),
     /// Unary operation (not, neg)
