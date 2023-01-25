@@ -133,11 +133,11 @@ fn binop_can_fail(binop: BinOp) -> bool {
 /// Check if this is a group of statements of the form: "check that we can do
 /// a unary operation, then do this operation (ex.: check that negating a number
 /// won't lead to an overflow)", unless we compile for release mode.
-fn check_if_assert_then_unop(
+fn check_if_assert_then_unop<R>(
     release: bool,
-    st1: &Statement,
-    st2: &Statement,
-    st3: &Statement,
+    st1: &Statement<R>,
+    st2: &Statement<R>,
+    st3: &Statement<R>,
 ) -> bool {
     match &st3.content {
         RawStatement::Assign(_, Rvalue::UnaryOp(unop, _)) => {
@@ -171,11 +171,11 @@ fn check_if_assert_then_unop(
 ///   ```
 /// Or that there is no assert but the value is a constant which will not
 /// lead to saturation.
-fn check_if_simplifiable_assert_then_unop(
+fn check_if_simplifiable_assert_then_unop<R>(
     release: bool,
-    st1: &Statement,
-    st2: &Statement,
-    st3: &Statement,
+    st1: &Statement<R>,
+    st2: &Statement<R>,
+    st3: &Statement<R>,
 ) -> bool {
     match (&st1.content, &st2.content, &st3.content) {
         (
@@ -257,7 +257,7 @@ fn check_if_simplifiable_assert_then_unop(
 ///   dest := -(move x); // `move x` can be a constant
 ///   ...
 ///   ```
-fn simplify_assert_then_unop(_st1: Statement, _st2: Statement, st3: Statement) -> Statement {
+fn simplify_assert_then_unop<R>(_st1: Statement<R>, _st2: Statement<R>, st3: Statement<R>) -> Statement<R> {
     st3
 }
 
@@ -270,11 +270,11 @@ fn simplify_assert_then_unop(_st1: Statement, _st2: Statement, st3: Statement) -
 /// Check if this is a group of statements which should be collapsed to a
 /// single checked binop.
 /// Simply check if the first statements is a checked binop.
-fn check_if_binop_then_assert(
+fn check_if_binop_then_assert<R>(
     release: bool,
-    st1: &Statement,
-    st2: &Statement,
-    st3: &Statement,
+    st1: &Statement<R>,
+    st2: &Statement<R>,
+    st3: &Statement<R>,
 ) -> bool {
     match &st1.content {
         RawStatement::Assign(_, Rvalue::BinaryOp(binop, _, _)) => {
@@ -306,11 +306,11 @@ fn check_if_binop_then_assert(
 ///   dest := move (tmp.0);
 ///   ...
 ///   ```
-fn check_if_simplifiable_binop_then_assert(
+fn check_if_simplifiable_binop_then_assert<R>(
     release: bool,
-    st1: &Statement,
-    st2: &Statement,
-    st3: &Statement,
+    st1: &Statement<R>,
+    st2: &Statement<R>,
+    st3: &Statement<R>,
 ) -> bool {
     match (&st1.content, &st2.content, &st3.content) {
         (
@@ -364,7 +364,7 @@ fn check_if_simplifiable_binop_then_assert(
 /// Note that the type of the binop changes in the two situations (in the
 /// translation, before the transformation `+` returns a pair (bool, int),
 /// after it has a monadic type).
-fn simplify_binop_then_assert(st1: Statement, st2: Statement, st3: Statement) -> Statement {
+fn simplify_binop_then_assert<R>(st1: Statement<R>, st2: Statement<R>, st3: Statement<R>) -> Statement<R> {
     match (st1.content, st2.content, st3.content) {
         (RawStatement::Assign(_, binop), RawStatement::Assert(_), RawStatement::Assign(mp, _)) => {
             let meta = combine_meta(&st1.meta, &combine_meta(&st2.meta, &st3.meta));
@@ -379,11 +379,11 @@ fn simplify_binop_then_assert(st1: Statement, st2: Statement, st3: Statement) ->
 /// Check if this is a group of statements of the form: "check that we can do
 /// an binary operation, then do this operation (ex.: check that a divisor is
 /// non zero before doing a division, panic otherwise)"
-fn check_if_assert_then_binop(
+fn check_if_assert_then_binop<R>(
     release: bool,
-    st1: &Statement,
-    st2: &Statement,
-    st3: &Statement,
+    st1: &Statement<R>,
+    st2: &Statement<R>,
+    st3: &Statement<R>,
 ) -> bool {
     match &st3.content {
         RawStatement::Assign(_, Rvalue::BinaryOp(binop, _, _)) => {
@@ -427,11 +427,11 @@ fn check_if_assert_then_binop(
 ///   ...
 ///   ```
 /// Or that there is no assert but the divisor is a non-zero constant.
-fn check_if_simplifiable_assert_then_binop(
+fn check_if_simplifiable_assert_then_binop<R>(
     release: bool,
-    st1: &Statement,
-    st2: &Statement,
-    st3: &Statement,
+    st1: &Statement<R>,
+    st2: &Statement<R>,
+    st3: &Statement<R>,
 ) -> bool {
     match (&st1.content, &st2.content, &st3.content) {
         (
@@ -537,18 +537,18 @@ fn check_if_simplifiable_assert_then_binop(
 ///   dest := move dividend / move divisor; // Can also be a `%`
 ///   ...
 ///   ```
-fn simplify_assert_then_binop(_st1: Statement, _st2: Statement, st3: Statement) -> Statement {
+fn simplify_assert_then_binop<R>(_st1: Statement<R>, _st2: Statement<R>, st3: Statement<R>) -> Statement<R> {
     st3
 }
 
 /// Attempt to simplify a sequence of statemnets
-fn simplify_st_seq(
+fn simplify_st_seq<R>(
     release: bool,
-    st1: Statement,
-    st2: Statement,
-    st3: Statement,
-    st4: Option<Statement>,
-) -> Statement {
+    st1: Statement<R>,
+    st2: Statement<R>,
+    st3: Statement<R>,
+    st4: Option<Statement<R>>,
+) -> Statement<R> {
     // Try to simplify
     let simpl_st = {
         // Simplify checked unops (negation)
